@@ -1,0 +1,2 @@
+Checked 135 records (window=7d, threshold=1.5x) — flagged 10 anomalies.
+Alert email sent.

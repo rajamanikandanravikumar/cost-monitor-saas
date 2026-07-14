@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cost Monitor — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #10162a;
+    --panel-border: #1e2740;
+    --text: #e7ebf5;
+    --text-muted: #6b7797;
+    --cyan: #35d0e0;
+    --amber: #f5a623;
+    --amber-dim: rgba(245, 166, 35, 0.12);
+    --danger: #ff6b5c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at top, #0d1326 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    padding: 32px 40px 64px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--panel-border);
+    margin-bottom: 28px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .brand h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  .brand .sub {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .live {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+  }
+
+  .live .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 0 0 rgba(53, 208, 224, 0.6);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(53, 208, 224, 0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(53, 208, 224, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(53, 208, 224, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live .dot { animation: none; }
+  }
+
+  /* Stat strip */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .stat .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+
+  .stat .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  .stat.warn .value { color: var(--amber); }
+
+  /* Chart grid */
+  .grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1.4fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .card h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 16px;
+  }
+
+  .anomaly-card {
+    border: 1px solid rgba(245, 166, 35, 0.35);
+    background: linear-gradient(180deg, var(--amber-dim), var(--panel) 60%);
+  }
+
+  .anomaly-card h3 { color: var(--amber); display: flex; align-items: center; gap: 8px; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  td {
+    padding: 9px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .cost { font-weight: 700; }
+  .cost.flagged { color: var(--amber); }
+
+  .empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-style: italic;
+    padding: 12px 0;
+  }
+
+  @media (max-width: 900px) {
+    body { padding: 20px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Cost Monitor</h1>
+      <span class="sub">// aws spend &amp; anomaly console</span>
+    </div>
+    <div class="live"><span class="dot"></span> MONITORING</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Total Spend (30d)</div>
+      <div class="value">${{ total_spend|default:"0.00"|floatformat:2 }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Daily Average</div>
+      <div class="value">${{ daily_average|default:"0.00"|floatformat:2 }}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Services Tracked</div>
+      <div class="value">{{ service_totals|length }}</div>
+    </div>
+    <div class="stat {% if anomaly_count > 0 %}warn{% endif %}">
+      <div class="label">Anomalies Flagged</div>
+      <div class="value">{{ anomaly_count }}</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Spend by Service</h3>
+      {% if service_totals %}
+        <canvas id="serviceChart"></canvas>
+      {% else %}
+        <div class="empty">No cost data loaded yet.</div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>Daily Spend Trend</h3>
+      {% if daily_totals %}
+        <canvas id="trendChart"></canvas>
+      {% else %}
+        <div class="empty">No cost data loaded yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if anomaly_count > 0 %}
+  <div class="card anomaly-card" style="margin-bottom:16px;">
+    <h3>⚠ Anomalies Detected ({{ anomaly_count }})</h3>
+    <table>
+      <tr><th>Date</th><th>Service</th><th>Cost</th></tr>
+      {% for record in anomalies %}
+      <tr>
+        <td>{{ record.date|date:"Y-m-d" }}</td>
+        <td>{{ record.service }}</td>
+        <td class="cost flagged">${{ record.cost_usd|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>Recent Records</h3>
+    {% if recent_records %}
+    <table>
+      <tr><th>Date</th><th>Service</th><th>Cost</th></tr>
+      {% for record in recent_records %}
+      <tr>
+        <td>{{ record.date|date:"Y-m-d" }}</td>
+        <td>{{ record.service }}</td>
+        <td class="cost {% if record.is_anomaly %}flagged{% endif %}">${{ record.cost_usd|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+      <div class="empty">No records yet — run <code>python manage.py load_costs</code>.</div>
+    {% endif %}
+  </div>
+
+<script>
+  const serviceLabels = [{% for s in service_totals %}"{{ s.service|escapejs }}",{% endfor %}];
+  const serviceData   = [{% for s in service_totals %}{{ s.total|default:0 }},{% endfor %}];
+  const dailyLabels   = [{% for d in daily_totals %}"{{ d.date|date:'M d' }}",{% endfor %}];
+  const dailyData     = [{% for d in daily_totals %}{{ d.total|default:0 }},{% endfor %}];
+
+  const fontFamily = "'Inter', sans-serif";
+  Chart.defaults.color = '#6b7797';
+  Chart.defaults.font.family = fontFamily;
+  Chart.defaults.borderColor = '#1e2740';
+
+  if (serviceLabels.length) {
+    new Chart(document.getElementById('serviceChart'), {
+      type: 'doughnut',
+      data: {
+        labels: serviceLabels,
+        datasets: [{
+          data: serviceData,
+          backgroundColor: ['#35d0e0', '#f5a623', '#7c8aff', '#4ade80', '#ff6b5c'],
+          borderColor: '#10162a',
+          borderWidth: 3
+        }]
+      },
+      options: {
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, padding: 14 } } }
+      }
+    });
+  }
+
+  if (dailyLabels.length) {
+    new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: {
+        labels: dailyLabels,
+        datasets: [{
+          label: 'Total daily cost ($)',
+          data: dailyData,
+          borderColor: '#35d0e0',
+          backgroundColor: 'rgba(53, 208, 224, 0.08)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: '#1e2740' } }
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>

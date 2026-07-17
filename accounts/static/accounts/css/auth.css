@@ -1,0 +1,125 @@
+/* accounts/static/accounts/css/auth.css
+   Shared styling for register and login pages. */
+
+:root {
+  --bg: #0a0e1a;
+  --panel: #10162a;
+  --panel-border: #1e2740;
+  --text: #e7ebf5;
+  --text-muted: #6b7797;
+  --cyan: #35d0e0;
+  --danger: #ff6b5c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top, #0d1326 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-box {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 32px;
+  width: 340px;
+}
+
+.auth-box h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  margin: 0 0 20px;
+}
+
+.auth-box label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 14px 0 6px;
+}
+
+.field-wrap {
+  position: relative;
+}
+
+.auth-box input {
+  width: 100%;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+.auth-box input:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-box button[type="submit"] {
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px;
+  background: var(--cyan);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-box button[type="submit"]:hover {
+  opacity: 0.9;
+}
+
+.auth-box button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.auth-box a { color: var(--cyan); }
+
+.auth-box p.link {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.success-message {
+  background: rgba(53, 208, 224, 0.1);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}

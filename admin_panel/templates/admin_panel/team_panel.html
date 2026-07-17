@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team — Cost Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'admin_panel/css/team_panel.css' %}">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Team</h1>
+      <span class="sub">// {{ organization.name }} — admin oversight</span>
+    </div>
+    <a href="{% url 'dashboard' %}" class="back-link">← Back to dashboard</a>
+  </div>
+
+  <div class="invite-section">
+    <button class="toggle-remark-form" data-target="invite-form">+ Invite teammate</button>
+    <form method="post" action="{% url 'invite_teammate' %}" class="remark-form invite-form" id="invite-form">
+      {% csrf_token %}
+      <div class="invite-fields">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Temporary password" required>
+        <select name="role">
+          <option value="member">Member</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button type="submit">Add to team</button>
+    </form>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="flash-message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if viewer_role == 'owner' and admins_only %}
+  <div class="admins-summary">
+    <div class="section-label">Organization admins ({{ admins_only|length }})</div>
+    <div class="admin-chip-row">
+      {% for entry in admins_only %}
+        <span class="admin-chip">{{ entry.user.username }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="team-grid">
+    {% for entry in team_data %}
+    <div class="member-card">
+      <div class="member-header">
+        <div class="member-identity">
+          <span class="avatar">{{ entry.user.username|slice:":1"|upper }}</span>
+          <div>
+            <div class="member-name">{{ entry.user.username }}</div>
+            <div class="member-email">{{ entry.user.email }}</div>
+          </div>
+        </div>
+        <span class="role-badge role-{{ entry.profile.role }}">{{ entry.profile.get_role_display }}</span>
+      </div>
+
+      <div class="member-body">
+        <div class="section">
+          <div class="section-label">Recent logins</div>
+          {% if entry.recent_logins %}
+            <ul class="login-list">
+              {% for log in entry.recent_logins %}
+                <li>
+                  <span class="login-time">{{ log.login_time|date:"Y-m-d H:i" }}</span>
+                  {% if log.logout_time %}
+                    <span class="logout-time">→ {{ log.logout_time|date:"H:i" }}</span>
+                  {% else %}
+                    <span class="active-tag">active</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="empty-note">No login history yet.</div>
+          {% endif %}
+        </div>
+
+        <div class="section">
+          <div class="section-label">Remarks</div>
+          {% if entry.remarks %}
+            <ul class="remark-list">
+              {% for remark in entry.remarks %}
+                <li>
+                  <p>{{ remark.text }}</p>
+                  <span class="remark-meta">— {{ remark.written_by.username }}, {{ remark.created_at|date:"Y-m-d" }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="empty-note">No remarks yet.</div>
+          {% endif %}
+
+          <button class="toggle-remark-form" data-target="remark-form-{{ entry.user.id }}">+ Add remark</button>
+          <form method="post" action="{% url 'add_remark' entry.user.id %}" class="remark-form" id="remark-form-{{ entry.user.id }}">
+            {% csrf_token %}
+            <textarea name="text" rows="2" placeholder="Write a note about this user..." required></textarea>
+            <button type="submit">Save</button>
+          </form>
+        </div>
+
+        {% if viewer_role == 'owner' and entry.profile.role != 'owner' %}
+        <div class="section">
+          <div class="section-label">Owner actions</div>
+          <div class="owner-actions">
+            <form method="post" action="{% url 'toggle_admin_role' entry.user.id %}">
+              {% csrf_token %}
+              <button type="submit" class="mini-btn">
+                {% if entry.profile.role == 'admin' %}Demote to member{% else %}Promote to admin{% endif %}
+              </button>
+            </form>
+            <form method="post" action="{% url 'remove_member' entry.user.id %}"
+                  onsubmit="return confirm('Remove {{ entry.user.username }} from the team?');">
+              {% csrf_token %}
+              <button type="submit" class="mini-btn danger">Remove</button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+      <div class="empty-note">No team members yet.</div>
+    {% endfor %}
+  </div>
+
+  <script src="{% static 'admin_panel/js/team_panel.js' %}" defer></script>
+</body>
+</html>

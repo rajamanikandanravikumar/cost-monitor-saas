@@ -1,0 +1,297 @@
+/* admin_panel/static/admin_panel/css/team_panel.css */
+
+:root {
+  --bg: #0a0e1a;
+  --panel: #10162a;
+  --panel-border: #1e2740;
+  --text: #e7ebf5;
+  --text-muted: #6b7797;
+  --cyan: #35d0e0;
+  --amber: #f5a623;
+  --danger: #ff6b5c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: radial-gradient(ellipse at top, #0d1326 0%, var(--bg) 55%);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  padding: 32px 40px 64px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--panel-border);
+  margin-bottom: 24px;
+}
+
+.brand h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  margin: 0;
+}
+
+.brand .sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-left: 12px;
+}
+
+.back-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.back-link:hover { color: var(--cyan); }
+
+/* Invite section */
+.invite-section { margin-bottom: 24px; }
+
+.invite-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.invite-fields input, .invite-fields select {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+
+.invite-fields input:focus, .invite-fields select:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.invite-form button[type="submit"] { align-self: flex-start; }
+
+.flash-message {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  background: rgba(53, 208, 224, 0.1);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+}
+
+.flash-message.error {
+  background: rgba(255, 107, 92, 0.1);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Owner-only admins summary strip */
+.admins-summary {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.admin-chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.admin-chip {
+  background: rgba(245, 166, 35, 0.12);
+  color: var(--amber);
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.member-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.member-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.member-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.member-name { font-weight: 600; font-size: 14px; }
+.member-email { font-size: 12px; color: var(--text-muted); }
+
+.role-badge {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.role-owner { background: rgba(53, 208, 224, 0.15); color: var(--cyan); }
+.role-admin { background: rgba(245, 166, 35, 0.15); color: var(--amber); }
+.role-member { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+
+.section { margin-bottom: 16px; }
+
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.login-list, .remark-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.login-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.login-time { color: var(--text); }
+.logout-time { color: var(--text-muted); }
+.active-tag { color: var(--cyan); font-size: 11px; }
+
+.remark-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.remark-list p { margin: 0 0 4px; font-size: 13px; }
+.remark-meta { font-size: 11px; color: var(--text-muted); }
+
+.empty-note {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.toggle-remark-form {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--cyan);
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: border-color 0.2s;
+}
+
+.toggle-remark-form:hover { border-color: var(--cyan); }
+
+.remark-form {
+  display: none;
+  margin-top: 10px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.remark-form.open { display: flex; }
+
+.remark-form textarea {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.remark-form button {
+  align-self: flex-end;
+  background: var(--cyan);
+  color: var(--bg);
+  border: none;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Owner actions: promote/demote/remove */
+.owner-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mini-btn {
+  background: none;
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.mini-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+.mini-btn.danger { color: var(--danger); border-color: rgba(255,107,92,0.3); }
+.mini-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+@media (max-width: 700px) {
+  body { padding: 20px; }
+  .team-grid { grid-template-columns: 1fr; }
+  .invite-fields { grid-template-columns: 1fr; }
+}

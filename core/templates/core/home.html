@@ -1,0 +1,55 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cost Monitor — Cloud spend, watched.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'core/css/home.css' %}">
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="brand">Cost Monitor</div>
+    <div class="nav-links">
+      <a href="{% url 'login' %}">Log in</a>
+      <a href="{% url 'register' %}" class="btn-primary">Register</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="tag"><span class="dot"></span> MULTI-TENANT COST MONITORING</div>
+    <h1>Catch cloud cost spikes <span>before</span> the invoice does.</h1>
+    <p>
+      A lightweight monitoring platform for teams who want to know about a runaway
+      resource the day it happens — not the day the bill arrives.
+    </p>
+    <div class="cta-row">
+      <a href="{% url 'register' %}" class="btn btn-primary">Get started free</a>
+      <a href="{% url 'login' %}" class="btn btn-secondary">Log in</a>
+    </div>
+  </section>
+
+  <div class="features">
+    <div class="feature-card">
+      <div class="icon">◈</div>
+      <h3>Live dashboard</h3>
+      <p>Spend-by-service breakdown and daily trend charts, updated as new cost data arrives.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">▲</div>
+      <h3>Anomaly detection</h3>
+      <p>A rolling-average detector flags any day a service's spend jumps well past its normal baseline.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">✉</div>
+      <h3>Automated alerts</h3>
+      <p>Get emailed the moment something's flagged — daily checks run on their own, no manual triggers.</p>
+    </div>
+  </div>
+
+  <script src="{% static 'core/js/home.js' %}" defer></script>
+</body>
+</html>

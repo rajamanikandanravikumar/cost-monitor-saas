@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Log in — Cost Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+</head>
+<body>
+  <div class="auth-box">
+    <h1>Log in</h1>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <label>{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}
+          <div class="error-text">{{ error }}</div>
+        {% endfor %}
+      {% endfor %}
+      {% for error in form.non_field_errors %}
+        <div class="error-text">{{ error }}</div>
+      {% endfor %}
+      <button type="submit">Log in</button>
+    </form>
+    <p class="link">No account? <a href="{% url 'register' %}">Register</a></p>
+  </div>
+
+  <script src="{% static 'accounts/js/auth.js' %}" defer></script>
+</body>
+</html>

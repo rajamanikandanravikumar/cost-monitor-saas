@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'monitor',
     'django_crontab',
+    'accounts',
+    'core',
+    'admin_panel',
 ]
 
 MIDDLEWARE = [

@@ -7,4 +7,5 @@ urlpatterns = [
     path('team/remark/<int:user_id>/', views.add_remark_view, name='add_remark'),
     path('team/toggle-role/<int:user_id>/', views.toggle_admin_role_view, name='toggle_admin_role'),
     path('team/remove/<int:user_id>/', views.remove_member_view, name='remove_member'),
+    path('team/set-expiry/<int:user_id>/', views.set_expiry_view, name='set_expiry'),
 ]

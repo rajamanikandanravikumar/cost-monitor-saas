@@ -31,10 +31,10 @@
           <div class="dropdown-header">
             <div class="dropdown-username">{{ request.user.username }}</div>
             <div class="dropdown-org">{{ organization.name }}</div>
-            {% if request.user.profile.role == 'admin' or request.user.profile.role == 'owner' %}
-              <a href="{% url 'team_panel' %}" class="dropdown-item">Team panel</a>
-            {% endif %}
           </div>
+          {% if request.user.profile.role == 'admin' or request.user.profile.role == 'owner' %}
+            <a href="{% url 'team_panel' %}" class="dropdown-item">Team panel</a>
+          {% endif %}
           <a href="{% url 'logout' %}" class="dropdown-item logout-item">
             <span>Log out</span>
           </a>

@@ -111,22 +111,41 @@
           </form>
         </div>
 
-        {% if viewer_role == 'owner' and entry.profile.role != 'owner' %}
+        {% if entry.can_manage %}
         <div class="section">
-          <div class="section-label">Owner actions</div>
+          <div class="section-label">Manage access</div>
           <div class="owner-actions">
+            {% if viewer_role == 'owner' %}
             <form method="post" action="{% url 'toggle_admin_role' entry.user.id %}">
               {% csrf_token %}
               <button type="submit" class="mini-btn">
                 {% if entry.profile.role == 'admin' %}Demote to member{% else %}Promote to admin{% endif %}
               </button>
             </form>
+            {% endif %}
             <form method="post" action="{% url 'remove_member' entry.user.id %}"
-                  onsubmit="return confirm('Remove {{ entry.user.username }} from the team?');">
+                  onsubmit="return confirm('Remove {{ entry.user.username }} from the team? This revokes their access immediately.');">
               {% csrf_token %}
-              <button type="submit" class="mini-btn danger">Remove</button>
+              <button type="submit" class="mini-btn danger">Remove access</button>
             </form>
           </div>
+
+          <form method="post" action="{% url 'set_expiry' entry.user.id %}" class="expiry-form">
+            {% csrf_token %}
+            <label class="expiry-label">
+              Access expires on
+              {% if entry.profile.access_expires_on %}
+                <span class="expiry-current">(currently {{ entry.profile.access_expires_on|date:"Y-m-d" }})</span>
+              {% else %}
+                <span class="expiry-current">(currently: never)</span>
+              {% endif %}
+            </label>
+            <div class="expiry-controls">
+              <input type="date" name="expires_on">
+              <button type="submit" class="mini-btn">Set</button>
+              <button type="submit" name="expires_on" value="" class="mini-btn" formnovalidate>Clear</button>
+            </div>
+          </form>
         </div>
         {% endif %}
       </div>

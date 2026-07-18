@@ -295,3 +295,29 @@ body {
   .team-grid { grid-template-columns: 1fr; }
   .invite-fields { grid-template-columns: 1fr; }
 }
+.expiry-form { margin-top: 10px; }
+
+.expiry-label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.expiry-current { color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
+
+.expiry-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.expiry-controls input[type="date"] {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+}

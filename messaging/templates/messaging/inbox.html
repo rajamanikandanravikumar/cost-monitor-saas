@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages — Cost Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Messages</h1>
+      <span class="sub">// {{ organization.name }}</span>
+    </div>
+    <a href="{% url 'dashboard' %}" class="back-link">← Back to dashboard</a>
+  </div>
+
+  <div class="contact-list">
+    {% for entry in contact_data %}
+    <a href="{% url 'thread' entry.user.id %}" class="contact-row">
+      <span class="avatar">{{ entry.user.username|slice:":1"|upper }}</span>
+      <div class="contact-info">
+        <div class="contact-top">
+          <span class="contact-name">{{ entry.user.username }}</span>
+          <span class="role-tag role-{{ entry.profile.role }}">{{ entry.profile.get_role_display }}</span>
+        </div>
+        {% if entry.last_message %}
+          <div class="contact-preview">{{ entry.last_message.body|truncatechars:60 }}</div>
+        {% else %}
+          <div class="contact-preview empty">No messages yet — say hello</div>
+        {% endif %}
+      </div>
+      {% if entry.unread_count > 0 %}
+        <span class="unread-badge">{{ entry.unread_count }}</span>
+      {% endif %}
+    </a>
+    {% empty %}
+      <div class="empty-note">No one to message yet.</div>
+    {% endfor %}
+  </div>
+
+</body>
+</html>

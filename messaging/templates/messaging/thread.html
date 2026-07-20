@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ other_user.username }} — Messages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'messaging/css/messaging.css' %}">
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>{{ other_user.username }}</h1>
+      <span class="sub role-tag role-{{ other_profile.role }}">{{ other_profile.get_role_display }}</span>
+    </div>
+    <a href="{% url 'inbox' %}" class="back-link">← All messages</a>
+  </div>
+
+  <div class="thread" id="chatThreadBox">
+    {% for msg in conversation %}
+      <div class="bubble-row {% if msg.sender == request.user %}mine{% endif %}">
+        <div class="bubble">
+          <p>{{ msg.body|linebreaksbr }}</p>
+          <span class="bubble-time">{{ msg.created_at|date:"M d, H:i" }}</span>
+        </div>
+      </div>
+    {% empty %}
+      <div class="empty-note">No messages yet — start the conversation below.</div>
+    {% endfor %}
+  </div>
+
+  <form method="post" class="send-form" id="chatForm">
+    {% csrf_token %}
+    <textarea name="body" rows="2" placeholder="Type a message..." required autofocus id="chatTextArea"></textarea>
+    <button type="submit" id="sendBtn">Send</button>
+  </form>
+
+  <!-- UX Automation & Interface Event Scripting -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const threadBox = document.getElementById('chatThreadBox');
+      const inputArea = document.getElementById('chatTextArea');
+      const chatForm = document.getElementById('chatForm');
+      const sendBtn = document.getElementById('sendBtn');
+
+      // 1. Force context window to stick automatically to bottom on arrival
+      const scrollToBottom = () => {
+        if (threadBox) {
+          threadBox.scrollTop = threadBox.scrollHeight;
+        }
+      };
+      
+      scrollToBottom();
+      // Recalculate if system viewport variables adjust (mobile keyboards expanding, etc.)
+      window.addEventListener('resize', scrollToBottom);
+
+      // 2. Submit on 'Enter', inject natural carriage return layout on 'Shift + Enter'
+      if (inputArea) {
+        inputArea.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Halt default multi-line block drop behavior
+            
+            // Only trigger if input actually contains physical character data
+            if (inputArea.value.trim() !== '') {
+              chatForm.dispatchEvent(new Event('submit'));
+            }
+          }
+        });
+      }
+
+      // 3. Double-post defense mitigation
+      if (chatForm) {
+        chatForm.addEventListener('submit', () => {
+          sendBtn.disabled = true;
+          sendBtn.innerText = "...";
+          sendBtn.style.opacity = "0.5";
+          sendBtn.style.cursor = "not-allowed";
+          chatForm.submit();
+        });
+      }
+    });
+  </script>
+</body>
+</html>

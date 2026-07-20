@@ -32,9 +32,14 @@
             <div class="dropdown-username">{{ request.user.username }}</div>
             <div class="dropdown-org">{{ organization.name }}</div>
           </div>
+          
+          <!-- Navigation Items -->
+          <a href="{% url 'inbox' %}" class="dropdown-item">Messages</a>
+          
           {% if request.user.profile.role == 'admin' or request.user.profile.role == 'owner' %}
             <a href="{% url 'team_panel' %}" class="dropdown-item">Team panel</a>
           {% endif %}
+          
           <a href="{% url 'logout' %}" class="dropdown-item logout-item">
             <span>Log out</span>
           </a>

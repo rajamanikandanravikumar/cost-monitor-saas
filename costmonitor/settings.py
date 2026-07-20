@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'accounts',
     'core',
     'admin_panel',
+    'messaging',
 ]
 
 MIDDLEWARE = [

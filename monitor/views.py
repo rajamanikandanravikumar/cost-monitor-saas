@@ -5,7 +5,6 @@ from .models import CostSnapshot
 import os
 from django.http import HttpResponse, HttpResponseForbidden
 from django.core.management import call_command
-
 @login_required
 def dashboard(request):
     org = request.user.profile.organization

@@ -2,7 +2,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.db.models import Sum, Avg
 from .models import CostSnapshot
-
+import os
+from django.http import HttpResponse, HttpResponseForbidden
+from django.core.management import call_command
 
 @login_required
 def dashboard(request):
@@ -48,3 +50,13 @@ def dashboard(request):
         'daily_average': daily_average,
     }
     return render(request, 'monitor/dashboard.html', context)
+
+def run_scheduled_detection(request):
+    token = request.GET.get('token')
+    expected_token = os.getenv('CRON_SECRET_TOKEN')
+
+    if not expected_token or token != expected_token:
+        return HttpResponseForbidden("Forbidden")
+
+    call_command('detect_anomalies')
+    return HttpResponse("Detection run complete.")

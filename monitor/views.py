@@ -1,11 +1,13 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.db.models import Sum, Avg
-from .models import CostSnapshot
-import os
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden
 from django.core.management import call_command
+import os
+
+from .models import CostSnapshot
+
 
 @login_required
 def dashboard(request):
@@ -64,7 +66,13 @@ def dashboard(request):
     }
     return render(request, 'monitor/dashboard.html', context)
 
+
 def run_scheduled_detection(request):
+    """
+    Token-protected endpoint, triggered externally (cron-job.org) once a
+    day, since django-crontab can't run reliably on Render's free tier
+    (the container spins down and takes the OS cron daemon with it).
+    """
     token = request.GET.get('token')
     expected_token = os.getenv('CRON_SECRET_TOKEN')
 

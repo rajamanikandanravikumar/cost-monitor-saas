@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 
 class Command(BaseCommand):
-    help = "Creates a superuser from DJANGO_SUPERUSER_* env vars, only if one doesn't already exist. Safe to run on every deploy."
+    help = "Creates or updates a superuser from DJANGO_SUPERUSER_* env vars. Safe to run on every deploy — syncs the password each time so Render's env vars stay the source of truth."
 
     def handle(self, *args, **options):
         username = os.getenv("DJANGO_SUPERUSER_USERNAME")
@@ -19,9 +19,18 @@ class Command(BaseCommand):
             )
             return
 
-        if User.objects.filter(username=username).exists():
-            self.stdout.write(f"Superuser '{username}' already exists — skipping.")
-            return
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={"email": email, "is_staff": True, "is_superuser": True},
+        )
 
-        User.objects.create_superuser(username=username, email=email, password=password)
-        self.stdout.write(self.style.SUCCESS(f"Superuser '{username}' created."))
+        user.set_password(password)
+        user.email = email
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Superuser '{username}' created."))
+        else:
+            self.stdout.write(self.style.SUCCESS(f"Superuser '{username}' password synced."))

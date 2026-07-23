@@ -18,6 +18,15 @@
       <a href="{% url 'register' %}" class="btn-primary">Register</a>
     </div>
   </nav>
+  {% if messages %}
+  <div style="max-width: 600px; margin: 20px auto 0; padding: 0 24px;">
+    {% for message in messages %}
+      <div style="background: rgba(255, 107, 92, 0.1); border: 1px solid #ff6b5c; color: #ff6b5c; padding: 12px 18px; border-radius: 8px; font-size: 14px;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
   <section class="hero">
     <div class="tag"><span class="dot"></span> MULTI-TENANT COST MONITORING</div>

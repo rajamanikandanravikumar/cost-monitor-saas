@@ -23,8 +23,6 @@ def register_view(request):
                 password=data["password"],
             )
 
-            # The founding user of a new organization is its owner — the
-            # protected top role, not a demotable admin.
             Profile.objects.create(user=user, organization=organization, role="owner")
 
             auth_login(request, user)
@@ -43,9 +41,6 @@ def login_view(request):
             user = form.get_user()
             profile = getattr(user, 'profile', None)
 
-            # Block login if this user's access has an expiry date that has
-            # already passed. Checked here, before auth_login(), so an
-            # expired account never gets a valid session at all.
             if (
                 profile
                 and profile.access_expires_on

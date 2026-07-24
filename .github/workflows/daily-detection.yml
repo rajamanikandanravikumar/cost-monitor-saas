@@ -1,0 +1,14 @@
+name: Daily Anomaly Detection
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # 10:00 AM UTC daily
+  workflow_dispatch:  # lets you trigger it manually too, for testing
+
+jobs:
+  trigger-detection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call detection endpoint
+        run: |
+          curl -f "https://cost-monitor-saas.onrender.com/internal/run-detection/?token=${{ secrets.CRON_SECRET_TOKEN }}"

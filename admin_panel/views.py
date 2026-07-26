@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib import messages
-from django.utils import timezone
 from datetime import datetime
 
 from accounts.models import Profile, LoginLog
@@ -54,38 +53,43 @@ def team_panel_view(request):
 @login_required
 @admin_required
 def invite_teammate_view(request):
+    if request.method != "POST":
+        messages.error(request, "Invalid request.")
+        return redirect('team_panel')
+
     org = request.user.profile.organization
 
-    if request.method == "POST":
-        username = request.POST.get("username", "").strip()
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "")
-        role = request.POST.get("role", "member")
+    username = request.POST.get("username", "").strip()
+    email = request.POST.get("email", "").strip()
+    password = request.POST.get("password", "")
+    role = request.POST.get("role", "member")
 
-        error = None
-        if not username or not email or not password:
-            error = "All fields are required."
-        elif User.objects.filter(username=username).exists():
-            error = "That username is already taken."
-        elif role not in ("member", "admin"):
-            error = "Invalid role."
-        else:
-            try:
-                validate_password(password)
-            except ValidationError as e:
-                error = " ".join(e.messages)
+    error = None
+    if not username or not email or not password:
+        error = "All fields are required."
+    elif User.objects.filter(username=username).exists():
+        error = "That username is already taken."
+    elif User.objects.filter(email=email).exists():
+        error = "That email is already registered to another account."
+    elif role not in ("member", "admin"):
+        error = "Invalid role."
+    else:
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            error = " ".join(e.messages)
 
-        if error:
-            messages.error(request, error)
-        else:
-            new_user = User.objects.create_user(
-                username=username, email=email, password=password
-            )
-            Profile.objects.create(user=new_user, organization=org, role=role)
-            messages.success(
-                request,
-                f"{username} has been added to {org.name} as {role}."
-            )
+    if error:
+        messages.error(request, error)
+    else:
+        new_user = User.objects.create_user(
+            username=username, email=email, password=password
+        )
+        Profile.objects.create(user=new_user, organization=org, role=role)
+        messages.success(
+            request,
+            f"{username} has been added to {org.name} as {role}."
+        )
 
     return redirect('team_panel')
 
@@ -93,23 +97,26 @@ def invite_teammate_view(request):
 @login_required
 @admin_required
 def add_remark_view(request, user_id):
+    if request.method != "POST":
+        messages.error(request, "Invalid request.")
+        return redirect('team_panel')
+
     org = request.user.profile.organization
 
     target_profile = get_object_or_404(Profile, user_id=user_id, organization=org)
     target_user = target_profile.user
 
-    if request.method == "POST":
-        text = request.POST.get("text", "").strip()
-        if text:
-            Remark.objects.create(
-                organization=org,
-                target_user=target_user,
-                written_by=request.user,
-                text=text,
-            )
-            messages.success(request, f"Remark added for {target_user.username}.")
-        else:
-            messages.error(request, "Remark text cannot be empty.")
+    text = request.POST.get("text", "").strip()
+    if text:
+        Remark.objects.create(
+            organization=org,
+            target_user=target_user,
+            written_by=request.user,
+            text=text,
+        )
+        messages.success(request, f"Remark added for {target_user.username}.")
+    else:
+        messages.error(request, "Remark text cannot be empty.")
 
     return redirect('team_panel')
 
@@ -117,11 +124,10 @@ def add_remark_view(request, user_id):
 @login_required
 @owner_required
 def toggle_admin_role_view(request, user_id):
-    """
-    Promotes a member to admin, or demotes an admin back to member.
-    Deliberately owner-only — bigger trust decision than removing a member,
-    stays restricted even though member removal is now open to admins.
-    """
+    if request.method != "POST":
+        messages.error(request, "Invalid request.")
+        return redirect('team_panel')
+
     org = request.user.profile.organization
     target_profile = get_object_or_404(Profile, user_id=user_id, organization=org)
 
@@ -143,11 +149,10 @@ def toggle_admin_role_view(request, user_id):
 @login_required
 @admin_required
 def remove_member_view(request, user_id):
-    """
-    Removes a user from the organization. Now available to any admin, not
-    just the owner — but can_manage_target() restricts *who* an admin can
-    remove to members only, never another admin or the owner.
-    """
+    if request.method != "POST":
+        messages.error(request, "Invalid request.")
+        return redirect('team_panel')
+
     org = request.user.profile.organization
     target_profile = get_object_or_404(Profile, user_id=user_id, organization=org)
 
@@ -167,11 +172,10 @@ def remove_member_view(request, user_id):
 @login_required
 @admin_required
 def set_expiry_view(request, user_id):
-    """
-    Sets or clears a user's access_expires_on date. Same permission rule
-    as remove: admins can only set this on members, owner can set it on
-    anyone but themselves/other owners.
-    """
+    if request.method != "POST":
+        messages.error(request, "Invalid request.")
+        return redirect('team_panel')
+
     org = request.user.profile.organization
     target_profile = get_object_or_404(Profile, user_id=user_id, organization=org)
 
@@ -179,22 +183,20 @@ def set_expiry_view(request, user_id):
         messages.error(request, "You don't have permission to change that user's access.")
         return redirect('team_panel')
 
-    if request.method == "POST":
-        date_str = request.POST.get("expires_on", "").strip()
-        if date_str:
-            try:
-                target_profile.access_expires_on = datetime.strptime(date_str, "%Y-%m-%d").date()
-                target_profile.save()
-                messages.success(
-                    request,
-                    f"{target_profile.user.username}'s access now expires on {date_str}."
-                )
-            except ValueError:
-                messages.error(request, "Invalid date format.")
-        else:
-            # Empty submission clears the expiry — access becomes indefinite again
-            target_profile.access_expires_on = None
+    date_str = request.POST.get("expires_on", "").strip()
+    if date_str:
+        try:
+            target_profile.access_expires_on = datetime.strptime(date_str, "%Y-%m-%d").date()
             target_profile.save()
-            messages.success(request, f"Expiry cleared for {target_profile.user.username}.")
+            messages.success(
+                request,
+                f"{target_profile.user.username}'s access now expires on {date_str}."
+            )
+        except ValueError:
+            messages.error(request, "Invalid date format.")
+    else:
+        target_profile.access_expires_on = None
+        target_profile.save()
+        messages.success(request, f"Expiry cleared for {target_profile.user.username}.")
 
     return redirect('team_panel')

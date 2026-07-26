@@ -41,6 +41,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.ActiveSessionEnforcementMiddleware',  # Verify active sessions & profile expiry per-request
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -107,8 +108,12 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 DASHBOARD_URL = os.getenv('DASHBOARD_URL', 'http://127.0.0.1:8000/')
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
 
 # --- Scheduled jobs ---
 # Works on Render (Linux) — was untestable on Windows locally, where we
@@ -122,6 +127,7 @@ CRONJOBS = [
 # plain http:// on 127.0.0.1 still works normally.
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000

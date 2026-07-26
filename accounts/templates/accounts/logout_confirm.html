@@ -1,0 +1,22 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Log out — Cost Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+</head>
+<body>
+  <div class="auth-box">
+    <h1>Log out</h1>
+    <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem; text-align: center;">Are you sure you want to log out of your session?</p>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button type="submit">Log out</button>
+    </form>
+    <p class="link"><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+  </div>
+</body>
+</html>

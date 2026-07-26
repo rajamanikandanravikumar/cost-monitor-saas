@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Resend Verification Link — Cost Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+</head>
+<body>
+  <div class="auth-box">
+    <h1>Resend Verification</h1>
+    <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem; text-align: center;">
+      Enter your email address below, and we will send you a new link to verify your account.
+    </p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="success-message" style="margin-bottom: 1rem;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <label for="id_email">Email Address</label>
+      <input type="email" name="email" id="id_email" required placeholder="name@company.com" style="width: 100%; box-sizing: border-box; margin-bottom: 1.5rem;">
+      <button type="submit">Send Verification Link</button>
+    </form>
+    <p class="link">Remembered your login? <a href="{% url 'login' %}">Log in</a></p>
+  </div>
+</body>
+</html>

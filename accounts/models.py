@@ -29,6 +29,7 @@ class Profile(models.Model):
         null=True, blank=True,
         help_text="If set, this user cannot log in after this date."
     )
+    email_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.username} ({self.organization.name}, {self.role})"

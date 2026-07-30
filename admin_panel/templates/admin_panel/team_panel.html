@@ -27,10 +27,6 @@
         <input type="text" name="username" placeholder="Username" required>
         <input type="email" name="email" placeholder="Email" required>
         <input type="password" name="password" placeholder="Temporary password" required>
-        <select name="role">
-          <option value="member">Member</option>
-          <option value="admin">Admin</option>
-        </select>
       </div>
       <button type="submit">Add to team</button>
     </form>
@@ -40,17 +36,6 @@
     {% for message in messages %}
       <div class="flash-message {% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</div>
     {% endfor %}
-  {% endif %}
-
-  {% if viewer_role == 'owner' and admins_only %}
-  <div class="admins-summary">
-    <div class="section-label">Organization admins ({{ admins_only|length }})</div>
-    <div class="admin-chip-row">
-      {% for entry in admins_only %}
-        <span class="admin-chip">{{ entry.user.username }}</span>
-      {% endfor %}
-    </div>
-  </div>
   {% endif %}
 
   <div class="team-grid">
@@ -115,14 +100,6 @@
         <div class="section">
           <div class="section-label">Manage access</div>
           <div class="owner-actions">
-            {% if viewer_role == 'owner' %}
-            <form method="post" action="{% url 'toggle_admin_role' entry.user.id %}">
-              {% csrf_token %}
-              <button type="submit" class="mini-btn">
-                {% if entry.profile.role == 'admin' %}Demote to member{% else %}Promote to admin{% endif %}
-              </button>
-            </form>
-            {% endif %}
             <form method="post" action="{% url 'remove_member' entry.user.id %}"
                   onsubmit="return confirm('Remove {{ entry.user.username }} from the team? This revokes their access immediately.');">
               {% csrf_token %}

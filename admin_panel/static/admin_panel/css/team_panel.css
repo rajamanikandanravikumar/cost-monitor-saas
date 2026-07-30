@@ -58,10 +58,7 @@ body {
 
 .invite-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 8px;
-  margin-bottom: 8px;
-}
+  grid-template-columns: 1fr 1fr 1fr;
 
 .invite-fields input, .invite-fields select {
   background: var(--bg);

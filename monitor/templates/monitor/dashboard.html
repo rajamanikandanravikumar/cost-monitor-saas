@@ -25,6 +25,9 @@
         <button class="user-menu-trigger" id="userMenuTrigger">
           <span class="user-avatar">{{ request.user.username|slice:":1"|upper }}</span>
           <span class="user-name">{{ request.user.username }}</span>
+          {% if unread_message_count > 0 %}
+            <span class="nav-badge">{{ unread_message_count }}</span>
+          {% endif %}
           <span class="chevron">▾</span>
         </button>
         <div class="user-menu-dropdown" id="userMenuDropdown">
@@ -32,14 +35,15 @@
             <div class="dropdown-username">{{ request.user.username }}</div>
             <div class="dropdown-org">{{ organization.name }}</div>
           </div>
-          
-          <!-- Navigation Items -->
-          <a href="{% url 'inbox' %}" class="dropdown-item">Messages</a>
-          
-          {% if request.user.profile.role == 'admin' or request.user.profile.role == 'owner' %}
+          <a href="{% url 'inbox' %}" class="dropdown-item">
+            Messages
+            {% if unread_message_count > 0 %}
+              <span class="dropdown-badge">{{ unread_message_count }}</span>
+            {% endif %}
+          </a>
+          {% if request.user.profile.role == 'admin' %}
             <a href="{% url 'team_panel' %}" class="dropdown-item">Team panel</a>
           {% endif %}
-          
           <a href="{% url 'logout' %}" class="dropdown-item logout-item">
             <span>Log out</span>
           </a>
@@ -116,7 +120,7 @@
       {% endfor %}
     </table>
     {% else %}
-      <div class="empty">No records yet — run <code>"{{ organization.name }}"</code>.</div>
+      <div class="empty">No records yet — run <code>python manage.py load_costs --org "{{ organization.name }}"</code>.</div>
     {% endif %}
   </div>
 

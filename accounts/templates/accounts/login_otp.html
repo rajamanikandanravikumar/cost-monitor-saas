@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Code — Cost Monitor</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+</head>
+<body>
+
+    <div class="auth-box">
+        <h1>Verify Code</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="{% if message.tags == 'error' %}error-text{% else %}success-message{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Countdown Timer Display -->
+        <p class="link" style="margin-bottom: 16px; font-weight: 500;">
+            Code expires in: 
+            <span id="otp-timer" data-seconds="{{ otp_seconds_remaining|default:120 }}" style="color: var(--cyan); font-weight: 600;">
+                02:00
+            </span>
+        </p>
+
+        <form method="post" action="">
+            {% csrf_token %}
+
+            <label for="id_code">Enter 6-digit Code</label>
+            <input type="text" name="code" id="id_code" maxlength="6" pattern="[0-9]*" required autocomplete="off" placeholder="123456">
+
+            <button type="submit">Verify & Proceed</button>
+        </form>
+
+        <!-- Hidden until expired or controlled by backend show_resend_link -->
+        <div id="resend-container" style="display: {% if show_resend_link %}block{% else %}none{% endif %}; margin-top: 16px;">
+            <form method="post" action="{% url 'resend_login_otp' %}">
+                {% csrf_token %}
+                <p class="link">
+                    Didn't receive the code or expired? 
+                    <button type="submit" style="background: none; border: none; color: var(--cyan); cursor: pointer; text-decoration: underline; font-size: inherit; font-family: inherit;">
+                        Resend Login Code
+                    </button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Added ?v=2 to force browser to re-fetch updated auth.js -->
+    <script src="{% static 'accounts/js/auth.js' %}?v=2" defer></script>
+
+    <!-- Failsafe Timer Execution -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const timerDisplay = document.getElementById("otp-timer");
+            if (!timerDisplay) return;
+
+            let seconds = parseInt(timerDisplay.getAttribute("data-seconds"), 10);
+            if (isNaN(seconds) || seconds <= 0) seconds = 120;
+
+            const codeInput = document.getElementById("id_code");
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const resendContainer = document.getElementById("resend-container");
+
+            function updateUI() {
+                if (seconds <= 0) {
+                    timerDisplay.textContent = "00:00 (Expired)";
+                    timerDisplay.style.color = "var(--danger, #ff6b5c)";
+                    if (codeInput) codeInput.disabled = true;
+                    if (submitBtn) submitBtn.disabled = true;
+                    if (resendContainer) resendContainer.style.display = "block";
+                    return true;
+                }
+
+                let m = Math.floor(seconds / 60);
+                let s = seconds % 60;
+                timerDisplay.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+                return false;
+            }
+
+            if (!updateUI()) {
+                const interval = setInterval(function () {
+                    seconds--;
+                    if (updateUI()) clearInterval(interval);
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

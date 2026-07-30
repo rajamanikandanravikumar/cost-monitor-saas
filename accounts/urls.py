@@ -1,42 +1,17 @@
 from django.urls import path
-from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
     path('register/', views.register_view, name='register'),
+    path('verify-otp/', views.verify_otp_view, name='verify_otp'),
+    path('resend-otp/<str:purpose>/', views.resend_otp_view, name='resend_otp'),
+
     path('login/', views.login_view, name='login'),
+    path('login/otp/', views.login_otp_view, name='login_otp'),
+    path('login/otp/resend/', views.resend_login_otp_view, name='resend_login_otp'),
     path('logout/', views.logout_view, name='logout'),
-    
-    # Email verification
-    path('verify/<str:uidb64>/<str:token>/', views.verify_email_view, name='verify_email'),
-    path('resend-verification/', views.resend_verification_view, name='resend_verification'),
-    
-    # Password Reset
-    path('password-reset/', 
-         auth_views.PasswordResetView.as_view(
-             template_name='accounts/password_reset_form.html',
-             email_template_name='accounts/password_reset_email.html',
-             subject_template_name='accounts/password_reset_subject.txt',
-             success_url='/accounts/password-reset/done/'
-         ), 
-         name='password_reset'),
-         
-    path('password-reset/done/', 
-         auth_views.PasswordResetDoneView.as_view(
-             template_name='accounts/password_reset_done.html'
-         ), 
-         name='password_reset_done'),
-         
-    path('password-reset-confirm/<uidb64>/<token>/', 
-         auth_views.PasswordResetConfirmView.as_view(
-             template_name='accounts/password_reset_confirm.html',
-             success_url='/accounts/password-reset/complete/'
-         ), 
-         name='password_reset_confirm'),
-         
-    path('password-reset/complete/', 
-         auth_views.PasswordResetCompleteView.as_view(
-             template_name='accounts/password_reset_complete.html'
-         ), 
-         name='password_reset_complete'),
+
+    path('password-reset/', views.password_reset_request_view, name='password_reset_request'),
+    path('password-reset/confirm/', views.password_reset_confirm_view, name='password_reset_confirm'),
+    path('password-reset/resend/', views.resend_reset_otp_view, name='resend_reset_otp'),
 ]

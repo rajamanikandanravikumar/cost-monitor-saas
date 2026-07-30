@@ -2,45 +2,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Log in — Cost Monitor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in — Cost Monitor</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
 </head>
 <body>
-  <div class="auth-box">
-    <h1>Log in</h1>
 
-    {% if messages %}
-      {% for message in messages %}
-        <div class="success-message" style="margin-bottom: 1rem; color: #10b981;">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
+    <div class="auth-box">
+        <h1>Log in</h1>
 
-    <form method="post">
-      {% csrf_token %}
-      {% for field in form %}
-        <label>{{ field.label }}</label>
-        {{ field }}
-        {% for error in field.errors %}
-          <div class="error-text">{{ error }}</div>
-        {% endfor %}
-      {% endfor %}
-      {% for error in form.non_field_errors %}
-        <div class="error-text">{{ error }}</div>
-      {% endfor %}
-      <button type="submit">Log in</button>
-    </form>
-    
-    {% if show_resend_link %}
-      <p class="link" style="margin-top: 1rem;"><a href="{% url 'resend_verification' %}" style="color: #6366f1; font-weight: 500;">Resend verification email</a></p>
-    {% endif %}
-    
-    <p class="link"><a href="{% url 'password_reset' %}" style="color: #64748b;">Forgot password?</a></p>
-    <p class="link">No account? <a href="{% url 'register' %}">Register</a></p>
-  </div>
+        <!-- Django Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <!-- If the message is an error, use your red error-text class, otherwise use the cyan success-message -->
+                <div class="{% if message.tags == 'error' %}error-text{% else %}success-message{% endif %}" 
+                     style="{% if message.tags == 'error' %}margin-bottom: 16px; display: block;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
 
-  <script src="{% static 'accounts/js/auth.js' %}" defer></script>
+        <form method="post" action="">
+            {% csrf_token %}
+
+            {% if form %}
+                <!-- Dynamic form rendering (when views.py passes 'form') -->
+                {% for field in form %}
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+
+                    {% for error in field.errors %}
+                        <div class="error-text">{{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+
+                {% for error in form.non_field_errors %}
+                    <div class="error-text">{{ error }}</div>
+                {% endfor %}
+            {% else %}
+                <!-- Failsafe fallback: Hardcoded inputs if views.py does NOT pass 'form' on error -->
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" required>
+
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" required>
+            {% endif %}
+
+            <button type="submit">Log in</button>
+        </form>
+
+        <!-- Links mapped to your exact accounts/urls.py -->
+        {% if show_resend_link %}
+            <p class="link"><a href="{% url 'resend_otp' purpose='verification' %}">Resend verification code</a></p>
+        {% endif %}
+
+        <p class="link"><a href="{% url 'password_reset_request' %}">Forgot password?</a></p>
+        <p class="link">No account? <a href="{% url 'register' %}">Register</a></p>
+    </div>
+
+    <script src="{% static 'accounts/js/auth.js' %}" defer></script>
 </body>
 </html>

@@ -45,12 +45,6 @@ PURPOSE_MESSAGES = {
 
 
 def _send_otp_email_now(user_id, email, purpose, code):
-    """
-    Runs inside the background thread. Takes plain values (not model
-    instances) rather than the user/otp objects themselves — safer across
-    a thread boundary, avoids any risk of touching a DB connection that
-    belongs to the main request thread.
-    """
     subject = PURPOSE_SUBJECTS.get(purpose, "Your Cost Monitor code")
     intro = PURPOSE_MESSAGES.get(purpose, "Your code is:")
     try:
@@ -63,11 +57,11 @@ def _send_otp_email_now(user_id, email, purpose, code):
             ),
             from_email=None,
             recipient_list=[email],
-            fail_silently=True,  # a background thread has nowhere to surface an error to the user anyway
+            fail_silently=False,
         )
-    except Exception:
-        pass  # logged as a future improvement — see PRODUCTION_PLAN.md error monitoring item
-
+        print(f"OTP email sent successfully to {email} (purpose={purpose})")
+    except Exception as e:
+        print(f"OTP EMAIL FAILED for {email} (purpose={purpose}): {e}")
 
 def send_otp_for(user, purpose):
     """

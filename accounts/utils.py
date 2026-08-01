@@ -1,10 +1,14 @@
 import secrets
 import threading
+import logging
 from datetime import timedelta
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.conf import settings
 
 from .models import OTP
+
+logger = logging.getLogger(__name__)
 
 
 def generate_otp(user, purpose):
@@ -47,6 +51,10 @@ PURPOSE_MESSAGES = {
 def _send_otp_email_now(user_id, email, purpose, code):
     subject = PURPOSE_SUBJECTS.get(purpose, "Your Cost Monitor code")
     intro = PURPOSE_MESSAGES.get(purpose, "Your code is:")
+    
+    # Explicitly pull the sender address
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
+
     try:
         send_mail(
             subject=subject,
@@ -55,22 +63,22 @@ def _send_otp_email_now(user_id, email, purpose, code):
                 f"This code expires in {OTP.VALID_MINUTES} minutes and can only be used once.\n"
                 f"If you didn't request this, you can safely ignore this email."
             ),
-            from_email=None,
+            from_email=from_email,
             recipient_list=[email],
             fail_silently=False,
         )
-        print(f"OTP email sent successfully to {email} (purpose={purpose})")
+        print(f"✅ OTP email sent successfully to {email} (purpose={purpose})")
     except Exception as e:
-        print(f"OTP EMAIL FAILED for {email} (purpose={purpose}): {e}")
+        print(f"❌ OTP EMAIL FAILED for {email} (purpose={purpose}): {e}")
+        logger.error(f"OTP Email Delivery Failed: {e}", exc_info=True)
+
 
 def send_otp_for(user, purpose):
     """
-    The main entry point views should call: generates the OTP synchronously
-    (fast — just a DB write, so cooldown errors still surface immediately),
-    then fires the actual email send in a background thread so the HTTP
-    response doesn't wait on Gmail's SMTP round-trip.
+    The main entry point views should call: generates the OTP synchronously,
+    then fires the actual email send in a background thread.
     """
-    otp = generate_otp(user, purpose)  # raises ValueError on cooldown — let the caller handle it
+    otp = generate_otp(user, purpose)
 
     thread = threading.Thread(
         target=_send_otp_email_now,

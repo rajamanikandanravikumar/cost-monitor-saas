@@ -1,5 +1,5 @@
 import secrets
-import threading
+import sys
 import logging
 from datetime import timedelta
 from django.utils import timezone
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 def generate_otp(user, purpose):
     """
-    Fast, synchronous — just database writes. Raises ValueError if called
-    within the resend cooldown window.
+    Fast, synchronous database write for generating OTP.
+    Raises ValueError if called within the resend cooldown window.
     """
     recent = OTP.objects.filter(user=user, purpose=purpose).order_by('-created_at').first()
     if recent and not recent.is_used:
@@ -52,11 +52,12 @@ def _send_otp_email_now(user_id, email, purpose, code):
     subject = PURPOSE_SUBJECTS.get(purpose, "Your Cost Monitor code")
     intro = PURPOSE_MESSAGES.get(purpose, "Your code is:")
     
-    # Explicitly pull the sender address
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
 
+    print(f" Attempting to send OTP email to {email} from {from_email}...", flush=True)
+
     try:
-        send_mail(
+        sent_count = send_mail(
             subject=subject,
             message=(
                 f"Hi,\n\n{intro}\n\n    {code}\n\n"
@@ -67,26 +68,19 @@ def _send_otp_email_now(user_id, email, purpose, code):
             recipient_list=[email],
             fail_silently=False,
         )
-        print(f"✅ OTP email sent successfully to {email} (purpose={purpose})")
+        print(f" SUCCESS: OTP email sent to {email} (Sent count: {sent_count})", flush=True)
     except Exception as e:
-        print(f"❌ OTP EMAIL FAILED for {email} (purpose={purpose}): {e}")
-        logger.error(f"OTP Email Delivery Failed: {e}", exc_info=True)
+        print(f" ERROR: OTP EMAIL FAILED for {email}: {repr(e)}", flush=True)
+        logger.error(f"OTP email dispatch failure for {email}: {repr(e)}", exc_info=True)
 
 
 def send_otp_for(user, purpose):
     """
-    The main entry point views should call: generates the OTP synchronously,
-    then fires the actual email send in a background thread.
+    Main entry point: generates the OTP and sends the email synchronously
+    to prevent Gunicorn worker threads on Render from killing background processes.
     """
     otp = generate_otp(user, purpose)
-
-    thread = threading.Thread(
-        target=_send_otp_email_now,
-        args=(user.id, user.email, purpose, otp.code),
-        daemon=True,
-    )
-    thread.start()
-
+    _send_otp_email_now(user.id, user.email, purpose, otp.code)
     return otp
 
 

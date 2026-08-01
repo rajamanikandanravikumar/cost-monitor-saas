@@ -1,7 +1,10 @@
 import secrets
 import sys
 import logging
+import smtplib
+import socket
 from datetime import timedelta
+
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
@@ -57,6 +60,7 @@ def _send_otp_email_now(user_id, email, purpose, code):
     print(f" Attempting to send OTP email to {email} from {from_email}...", flush=True)
 
     try:
+        # Django send_mail with error handling to avoid 500 Internal Server Errors
         sent_count = send_mail(
             subject=subject,
             message=(
@@ -69,15 +73,19 @@ def _send_otp_email_now(user_id, email, purpose, code):
             fail_silently=False,
         )
         print(f" SUCCESS: OTP email sent to {email} (Sent count: {sent_count})", flush=True)
-    except Exception as e:
+        return True
+
+    except (smtplib.SMTPException, socket.timeout, socket.error, Exception) as e:
+        # Prevents crashing the view into a 500 Internal Server Error
         print(f" ERROR: OTP EMAIL FAILED for {email}: {repr(e)}", flush=True)
         logger.error(f"OTP email dispatch failure for {email}: {repr(e)}", exc_info=True)
+        return False
 
 
 def send_otp_for(user, purpose):
     """
-    Main entry point: generates the OTP and sends the email synchronously
-    to prevent Gunicorn worker threads on Render from killing background processes.
+    Main entry point: generates the OTP and attempts email dispatch.
+    Returns the generated OTP object.
     """
     otp = generate_otp(user, purpose)
     _send_otp_email_now(user.id, user.email, purpose, otp.code)

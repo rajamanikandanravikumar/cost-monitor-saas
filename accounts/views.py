@@ -1,4 +1,3 @@
-import time
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
@@ -9,18 +8,7 @@ from django.utils import timezone
 
 from .forms import RegisterForm
 from .models import Organization, Profile
-from .utils import generate_otp, send_otp_email, verify_otp
-
-OTP_EXPIRY_SECONDS = 120  # 2 Minutes Countdown Duration
-
-
-def _get_otp_seconds_remaining(request):
-    """Calculates remaining seconds before the active OTP session expires."""
-    created_at = request.session.get('otp_created_at')
-    if not created_at:
-        return 0
-    elapsed = int(time.time() - created_at)
-    return max(0, OTP_EXPIRY_SECONDS - elapsed)
+from .utils import send_otp_for, verify_otp
 
 
 def register_view(request):
@@ -40,11 +28,9 @@ def register_view(request):
             Profile.objects.create(user=user, organization=organization, role="admin")
 
             try:
-                otp = generate_otp(user, "verify_email")
-                send_otp_email(user, otp)
-                request.session['otp_created_at'] = time.time()
-            except Exception:
-                messages.warning(request, "Account created, but we couldn't send a verification code. Try resending it.")
+                send_otp_for(user, "verify_email")
+            except ValueError:
+                pass  # cooldown can't realistically trigger on a brand new user — ignore defensively
 
             auth_login(request, user)
             messages.success(request, f"Enter the 6-digit code sent to {user.email}.")
@@ -63,8 +49,6 @@ def verify_otp_view(request):
     if profile and profile.email_verified:
         return redirect("dashboard")
 
-    seconds_remaining = _get_otp_seconds_remaining(request)
-
     if request.method == "POST":
         code = request.POST.get("code", "")
         success, message = verify_otp(request.user, "verify_email", code)
@@ -72,39 +56,25 @@ def verify_otp_view(request):
             if profile:
                 profile.email_verified = True
                 profile.save()
-            request.session.pop('otp_created_at', None)
             messages.success(request, "Email verified!")
             return redirect("dashboard")
         else:
             messages.error(request, message)
 
-    return render(request, "accounts/resend_verification.html", {
-        "purpose": "verify_email",
-        "otp_seconds_remaining": seconds_remaining,
-        "show_resend_link": seconds_remaining == 0,
-    })
+    return render(request, "accounts/resend_verification.html")
 
 
 def resend_otp_view(request, purpose):
-    if request.method != "POST":
+    if request.method != "POST" or not request.user.is_authenticated:
         return redirect("verify_otp")
 
-    if not request.user.is_authenticated:
-        return redirect("login")
-
     try:
-        otp = generate_otp(request.user, purpose)
-        send_otp_email(request.user, otp)
-        request.session['otp_created_at'] = time.time()
+        send_otp_for(request.user, purpose)
         messages.success(request, "A new code has been sent.")
     except ValueError as e:
         messages.error(request, str(e))
-    except Exception:
-        messages.error(request, "Couldn't send the code right now — try again shortly.")
 
-    if purpose == "verify_email":
-        return redirect("verify_otp")
-    return redirect("login")
+    return redirect("verify_otp" if purpose == "verify_email" else "login")
 
 
 def login_view(request):
@@ -123,15 +93,13 @@ def login_view(request):
             and profile.access_expires_on
             and profile.access_expires_on < timezone.now().date()
         ):
-            messages.error(request, "Your access has expired. Contact your organization owner.")
+            messages.error(request, "Your access has expired. Contact your organization admin.")
             return render(request, "accounts/login.html")
 
         try:
-            otp = generate_otp(user, "login")
-            send_otp_email(user, otp)
-            request.session['otp_created_at'] = time.time()
-        except Exception:
-            messages.error(request, "Couldn't send a login code right now — try again shortly.")
+            send_otp_for(user, "login")
+        except ValueError as e:
+            messages.error(request, str(e))
             return render(request, "accounts/login.html")
 
         request.session['pending_login_user_id'] = user.pk
@@ -149,27 +117,20 @@ def login_otp_view(request):
     try:
         user = User.objects.get(pk=pending_id)
     except User.DoesNotExist:
-        request.session.pop('pending_login_user_id', None)
+        del request.session['pending_login_user_id']
         return redirect("login")
-
-    seconds_remaining = _get_otp_seconds_remaining(request)
 
     if request.method == "POST":
         code = request.POST.get("code", "")
         success, message = verify_otp(user, "login", code)
         if success:
-            request.session.pop('pending_login_user_id', None)
-            request.session.pop('otp_created_at', None)
+            del request.session['pending_login_user_id']
             auth_login(request, user)
             return redirect("dashboard")
         else:
             messages.error(request, message)
 
-    return render(request, "accounts/login_otp.html", {
-        "email": user.email,
-        "otp_seconds_remaining": seconds_remaining,
-        "show_resend_link": seconds_remaining == 0,
-    })
+    return render(request, "accounts/login_otp.html", {"email": user.email})
 
 
 def resend_login_otp_view(request):
@@ -182,14 +143,10 @@ def resend_login_otp_view(request):
 
     try:
         user = User.objects.get(pk=pending_id)
-        otp = generate_otp(user, "login")
-        send_otp_email(user, otp)
-        request.session['otp_created_at'] = time.time()
+        send_otp_for(user, "login")
         messages.success(request, "A new code has been sent.")
     except ValueError as e:
         messages.error(request, str(e))
-    except Exception:
-        messages.error(request, "Couldn't send the code right now.")
 
     return redirect("login_otp")
 
@@ -201,11 +158,9 @@ def password_reset_request_view(request):
 
         if user:
             try:
-                otp = generate_otp(user, "password_reset")
-                send_otp_email(user, otp)
+                send_otp_for(user, "password_reset")
                 request.session['pending_reset_user_id'] = user.pk
-                request.session['otp_created_at'] = time.time()
-            except Exception:
+            except ValueError:
                 pass
 
         messages.success(request, "If that email is registered, a reset code has been sent.")
@@ -216,12 +171,6 @@ def password_reset_request_view(request):
 
 def password_reset_confirm_view(request):
     pending_id = request.session.get('pending_reset_user_id')
-
-    if not pending_id and request.method != "POST":
-        messages.error(request, "Request a reset code first.")
-        return redirect("password_reset_request")
-
-    seconds_remaining = _get_otp_seconds_remaining(request)
 
     if request.method == "POST":
         if not pending_id:
@@ -239,41 +188,28 @@ def password_reset_confirm_view(request):
 
         if password1 != password2:
             messages.error(request, "Passwords do not match.")
-            return render(request, "accounts/password_reset_confirm.html", {
-                "otp_seconds_remaining": seconds_remaining,
-                "show_resend_link": seconds_remaining == 0,
-            })
+            return render(request, "accounts/password_reset_confirm.html")
 
         try:
             validate_password(password1, user=user)
         except ValidationError as e:
             for err in e.messages:
                 messages.error(request, err)
-            return render(request, "accounts/password_reset_confirm.html", {
-                "otp_seconds_remaining": seconds_remaining,
-                "show_resend_link": seconds_remaining == 0,
-            })
+            return render(request, "accounts/password_reset_confirm.html")
 
         success, message = verify_otp(user, "password_reset", code)
         if not success:
             messages.error(request, message)
-            return render(request, "accounts/password_reset_confirm.html", {
-                "otp_seconds_remaining": seconds_remaining,
-                "show_resend_link": seconds_remaining == 0,
-            })
+            return render(request, "accounts/password_reset_confirm.html")
 
         user.set_password(password1)
         user.save()
-        request.session.pop('pending_reset_user_id', None)
-        request.session.pop('otp_created_at', None)
+        del request.session['pending_reset_user_id']
 
         messages.success(request, "Password updated — you can now log in.")
         return redirect("login")
 
-    return render(request, "accounts/password_reset_confirm.html", {
-        "otp_seconds_remaining": seconds_remaining,
-        "show_resend_link": seconds_remaining == 0,
-    })
+    return render(request, "accounts/password_reset_confirm.html")
 
 
 def resend_reset_otp_view(request):
@@ -286,14 +222,10 @@ def resend_reset_otp_view(request):
 
     try:
         user = User.objects.get(pk=pending_id)
-        otp = generate_otp(user, "password_reset")
-        send_otp_email(user, otp)
-        request.session['otp_created_at'] = time.time()
+        send_otp_for(user, "password_reset")
         messages.success(request, "A new code has been sent.")
     except ValueError as e:
         messages.error(request, str(e))
-    except Exception:
-        messages.error(request, "Couldn't send the code right now.")
 
     return redirect("password_reset_confirm")
 

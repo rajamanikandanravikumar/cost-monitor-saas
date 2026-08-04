@@ -1,23 +1,16 @@
 import secrets
-import sys
-import logging
-import smtplib
-import socket
+import threading
 from datetime import timedelta
-
 from django.utils import timezone
 from django.core.mail import send_mail
-from django.conf import settings
 
 from .models import OTP
-
-logger = logging.getLogger(__name__)
 
 
 def generate_otp(user, purpose):
     """
-    Fast, synchronous database write for generating OTP.
-    Raises ValueError if called within the resend cooldown window.
+    Fast, synchronous — just database writes. Raises ValueError if called
+    within the resend cooldown window.
     """
     recent = OTP.objects.filter(user=user, purpose=purpose).order_by('-created_at').first()
     if recent and not recent.is_used:
@@ -52,43 +45,46 @@ PURPOSE_MESSAGES = {
 
 
 def _send_otp_email_now(user_id, email, purpose, code):
+    """
+    Runs inside the background thread. Takes plain values (not model
+    instances) rather than the user/otp objects themselves — safer across
+    a thread boundary, avoids any risk of touching a DB connection that
+    belongs to the main request thread.
+    """
     subject = PURPOSE_SUBJECTS.get(purpose, "Your Cost Monitor code")
     intro = PURPOSE_MESSAGES.get(purpose, "Your code is:")
-    
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None)
-
-    print(f" Attempting to send OTP email to {email} from {from_email}...", flush=True)
-
     try:
-        # Django send_mail with error handling to avoid 500 Internal Server Errors
-        sent_count = send_mail(
+        send_mail(
             subject=subject,
             message=(
                 f"Hi,\n\n{intro}\n\n    {code}\n\n"
                 f"This code expires in {OTP.VALID_MINUTES} minutes and can only be used once.\n"
                 f"If you didn't request this, you can safely ignore this email."
             ),
-            from_email=from_email,
+            from_email=None,
             recipient_list=[email],
-            fail_silently=False,
+            fail_silently=True,  # a background thread has nowhere to surface an error to the user anyway
         )
-        print(f" SUCCESS: OTP email sent to {email} (Sent count: {sent_count})", flush=True)
-        return True
-
-    except (smtplib.SMTPException, socket.timeout, socket.error, Exception) as e:
-        # Prevents crashing the view into a 500 Internal Server Error
-        print(f" ERROR: OTP EMAIL FAILED for {email}: {repr(e)}", flush=True)
-        logger.error(f"OTP email dispatch failure for {email}: {repr(e)}", exc_info=True)
-        return False
+    except Exception:
+        pass  # logged as a future improvement — see PRODUCTION_PLAN.md error monitoring item
 
 
 def send_otp_for(user, purpose):
     """
-    Main entry point: generates the OTP and attempts email dispatch.
-    Returns the generated OTP object.
+    The main entry point views should call: generates the OTP synchronously
+    (fast — just a DB write, so cooldown errors still surface immediately),
+    then fires the actual email send in a background thread so the HTTP
+    response doesn't wait on Gmail's SMTP round-trip.
     """
-    otp = generate_otp(user, purpose)
-    _send_otp_email_now(user.id, user.email, purpose, otp.code)
+    otp = generate_otp(user, purpose)  # raises ValueError on cooldown — let the caller handle it
+
+    thread = threading.Thread(
+        target=_send_otp_email_now,
+        args=(user.id, user.email, purpose, otp.code),
+        daemon=True,
+    )
+    thread.start()
+
     return otp
 
 
